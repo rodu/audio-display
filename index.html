@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style>
+    body { margin: 0; padding: 0; }
+    #display {
+      width: 300px;
+      height: 150px;
+      background-color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="display"></canvas>
+  <script>
+    (function audioVisualizer(){
+      const display = document.getElementById('display');
+      const ctx = display.getContext('2d');
+      const drawRect = (x, y) => {
+        //console.log('drawing at', x, y);
+        ctx.fillRect(x, y, 10, 10);
+      }
+      const renderRect = (fx, fy, gridGap) => {
+        if (fx && fy) {
+          drawRect(fx * gridGap, fy * gridGap)
+        }
+      }
+
+      ctx.fillStyle = '#444';
+      Array(21).fill(0).map((n, fx) => {
+        Array(7).fill(0).map((n, fy) => {
+          renderRect(fx, fy, 12.5);
+        });
+      });
+
+      ctx.fill();
+      ctx.stroke();
+    })();
+  </script>
+</body>
+</html>
