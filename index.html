@@ -6,24 +6,31 @@
   <style>
     body { margin: 0; padding: 0; }
     #display {
-      width: 500px;
-      height: 150px;
       background-color: #ccc;
+    }
+
+    .container {
+      width: 100%;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    body {
+      margin: 20px;
     }
   </style>
 </head>
 <body>
-  <canvas id="display"></canvas>
-  <p>
-    <button id="btn-play">Play</button>
-    <button id="btn-pause">Pause</button>
-  </p>
+  <div class="container">
+    <canvas id="display"></canvas>
+    <p>
+      <button id="btn-play">Play</button>
+      <button id="btn-pause">Pause</button>
+    </p>
+  </div>
   <script>
     (function audioVisualizer(){
       const display = document.getElementById('display');
-      display.width = 500;
-      display.height = 150;
-
       const ctx = display.getContext('2d');
       const renderRect = (fx, fy, gridGap) => {
         //console.log('drawing:', fx, fy);
@@ -43,27 +50,46 @@
       // Takes a reference to the animation frame
       let animation;
       function clearDisplay() {
-        ctx.clearRect(0, 0, 500, 150);
+        ctx.clearRect(0, 0, display.width, display.height);
       }
 
       // Let's initialise the Howler player
       const sound = new Howl({
-        src: ['audio/1-06 Wake Me Up (Radio Edit).m4a'],
+        src: [
+          //'audio/1-01 Budapest.m4a',
+          //'audio/1-02 Stay with Me.m4a',
+          'audio/1-03 I\'m Yours (Radio Edit).m4a',
+          //'audio/1-06 Wake Me Up (Radio Edit).m4a',
+          //'audio/1-07 Titanium (feat. Sia).m4a',
+          //'audio/01 Distinto Diferente.m4a',
+          //'audio/14177_Song_In_May_Instrumental_Mix.mp3'
+        ],
         onplay: () => {
           visualizeSound();
         },
         onpause: () => {
-          //window.cancelAnimationFrame(animation);
-          window.clearTimeout(animation);
+          window.cancelAnimationFrame(animation);
+          //window.clearTimeout(animation);
+          clearDisplay();
+        },
+        onend: () => {
+          window.cancelAnimationFrame(animation);
           clearDisplay();
         }
       });
 
       const analyser = Howler.ctx.createAnalyser();
       // Declares frequency analysis parameters
-      analyser.fftSize = 1024;
+      analyser.fftSize = 128;
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.minDecibels = -80;
+      analyser.maxDecibels = -40;
+
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
+
+      display.width = (bufferLength / 2) * 10 + (bufferLength / 2) * 12.5 - 20;
+      display.height = 150;
 
       // Make connections to process sound data
       Howler.masterGain.connect(analyser);
@@ -75,14 +101,16 @@
         analyser.getByteFrequencyData(dataArray);
 
         // Reads the bar Y values
-        for (let x = 0; x < bufferLength; x += 16) {
-          for (let y = 0; y <= Math.round(dataArray[x]) % 6; y++) {
-            renderRect(x ? x / 16 : x, 6 - y, 12.5);
+        for (let x = 5; x < bufferLength; x++) {
+          const cap = Math.round(dataArray[x] / 25);
+
+          for (let y = 0; y <= cap; y++) {
+            renderRect(x - 5, 11 - y, 12.5);
           }
         }
 
-        //animation = requestAnimationFrame(visualizeSound);
-        animation = window.setTimeout(visualizeSound, 62);
+        animation = requestAnimationFrame(visualizeSound);
+        //animation = window.setTimeout(visualizeSound, 62);
       }
 
       document.getElementById('btn-play').addEventListener('click', () => {
