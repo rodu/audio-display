@@ -2,10 +2,11 @@
 <html>
 <head>
   <title></title>
+  <script src="node_modules/howler/dist/howler.min.js"></script>
   <style>
     body { margin: 0; padding: 0; }
     #display {
-      width: 300px;
+      width: 500px;
       height: 150px;
       background-color: #ccc;
     }
@@ -13,29 +14,84 @@
 </head>
 <body>
   <canvas id="display"></canvas>
+  <p>
+    <button id="btn-play">Play</button>
+    <button id="btn-pause">Pause</button>
+  </p>
   <script>
     (function audioVisualizer(){
       const display = document.getElementById('display');
+      display.width = 500;
+      display.height = 150;
+
       const ctx = display.getContext('2d');
-      const drawRect = (x, y) => {
-        //console.log('drawing at', x, y);
-        ctx.fillRect(x, y, 10, 10);
-      }
       const renderRect = (fx, fy, gridGap) => {
-        if (fx && fy) {
-          drawRect(fx * gridGap, fy * gridGap)
-        }
+        //console.log('drawing:', fx, fy);
+        ctx.fillRect(fx * gridGap, fy * gridGap, 10, 10);
       }
 
       ctx.fillStyle = '#444';
-      Array(21).fill(0).map((n, fx) => {
+      /*Array(21).fill(0).map((n, fx) => {
         Array(7).fill(0).map((n, fy) => {
           renderRect(fx, fy, 12.5);
         });
-      });
+      });*/
 
       ctx.fill();
       ctx.stroke();
+
+      // Takes a reference to the animation frame
+      let animation;
+      function clearDisplay() {
+        ctx.clearRect(0, 0, 500, 150);
+      }
+
+      // Let's initialise the Howler player
+      const sound = new Howl({
+        src: ['audio/1-06 Wake Me Up (Radio Edit).m4a'],
+        onplay: () => {
+          visualizeSound();
+        },
+        onpause: () => {
+          //window.cancelAnimationFrame(animation);
+          window.clearTimeout(animation);
+          clearDisplay();
+        }
+      });
+
+      const analyser = Howler.ctx.createAnalyser();
+      // Declares frequency analysis parameters
+      analyser.fftSize = 1024;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+
+      // Make connections to process sound data
+      Howler.masterGain.connect(analyser);
+      analyser.connect(Howler.ctx.destination);
+
+      function visualizeSound() {
+        clearDisplay();
+
+        analyser.getByteFrequencyData(dataArray);
+
+        // Reads the bar Y values
+        for (let x = 0; x < bufferLength; x += 16) {
+          for (let y = 0; y <= Math.round(dataArray[x]) % 6; y++) {
+            renderRect(x ? x / 16 : x, 6 - y, 12.5);
+          }
+        }
+
+        //animation = requestAnimationFrame(visualizeSound);
+        animation = window.setTimeout(visualizeSound, 62);
+      }
+
+      document.getElementById('btn-play').addEventListener('click', () => {
+        sound.play();
+      }, false);
+
+      document.getElementById('btn-pause').addEventListener('click', () => {
+        sound.pause();
+      }, false);
     })();
   </script>
 </body>

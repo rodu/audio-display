@@ -1,0 +1,24 @@
+{
+  "name": "audio-display",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "http-server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rodu/audio-display.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rodu/audio-display/issues"
+  },
+  "homepage": "https://github.com/rodu/audio-display#readme",
+  "dependencies": {
+    "howler": "^2.0.7"
+  }
+}
