@@ -30,11 +30,27 @@
   </div>
   <script>
     (function audioVisualizer(){
+      const config = {
+        dotSize: 3,
+        dotGap: 4,
+        scaleFactor: 25,
+        startPoint: 5,
+        topOffset: 11,
+        fftSize: 128,
+        smoothingTimeConstant: 0.8,
+        minDecibels: -80,
+        maxDecibels: -40
+      };
+
       const display = document.getElementById('display');
       const ctx = display.getContext('2d');
       const renderRect = (fx, fy, gridGap) => {
-        //console.log('drawing:', fx, fy);
-        ctx.fillRect(fx * gridGap, fy * gridGap, 10, 10);
+        ctx.fillRect(
+          fx * gridGap,
+          fy * gridGap,
+          config.dotSize,
+          config.dotSize
+        );
       }
 
       ctx.fillStyle = '#444';
@@ -80,16 +96,21 @@
 
       const analyser = Howler.ctx.createAnalyser();
       // Declares frequency analysis parameters
-      analyser.fftSize = 128;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.minDecibels = -80;
-      analyser.maxDecibels = -40;
+      analyser.fftSize = config.fftSize;
+      analyser.smoothingTimeConstant = config.smoothingTimeConstant;
+      analyser.minDecibels = config.minDecibels;
+      analyser.maxDecibels = config.maxDecibels;
 
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
 
-      display.width = (bufferLength / 2) * 10 + (bufferLength / 2) * 12.5 - 20;
-      display.height = 150;
+      display.width = (
+        (bufferLength / 2) * config.dotSize +
+        (bufferLength / 2) * config.dotGap - 2 * config.dotSize
+      );
+      display.height = (
+        (255 / config.scaleFactor) * (config.dotSize + config.dotGap / 2)
+      );
 
       // Make connections to process sound data
       Howler.masterGain.connect(analyser);
@@ -101,16 +122,21 @@
         analyser.getByteFrequencyData(dataArray);
 
         // Reads the bar Y values
-        for (let x = 5; x < bufferLength; x++) {
-          const cap = Math.round(dataArray[x] / 25);
-
-          for (let y = 0; y <= cap; y++) {
-            renderRect(x - 5, 11 - y, 12.5);
+        for (let x = config.startPoint; x < bufferLength; x++) {
+          for (
+            let y = 0;
+            y <= Math.round(dataArray[x] / config.scaleFactor);
+            y++
+          ) {
+            renderRect(
+              x - config.startPoint,
+              config.topOffset - y,
+              config.dotGap
+            );
           }
         }
 
         animation = requestAnimationFrame(visualizeSound);
-        //animation = window.setTimeout(visualizeSound, 62);
       }
 
       document.getElementById('btn-play').addEventListener('click', () => {
