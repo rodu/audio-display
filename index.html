@@ -48,6 +48,10 @@
   <div class="container">
     <canvas id="display"></canvas>
     <p>
+      <b>Select file to play:</b>
+      <input type="file" id="file-loader">
+    </p>
+    <p>
       <button id="btn-play">Play</button>
       <button id="btn-pause">Pause</button>
       <input type="range" id="master-fader" min="0" max="5" step="0.1" value="1.0">
@@ -127,8 +131,20 @@
 
       // Let's initialise the Howler player
       const audio = document.createElement('audio');
+
+      document.getElementById('file-loader')
+        .addEventListener('change', (event) => {
+          const fileReader = new FileReader();
+
+          fileReader.onload = (event) => {
+            audio.src = event.target.result;
+          };
+
+          fileReader.readAsDataURL(event.target.files[0]);
+        });
+
       // audio.src = 'audio/42\ The\ Sound.m4a';
-      audio.src = 'audio/33 Something Good.m4a';
+      // audio.src = 'audio/33 Something Good.m4a';
 
       audio.addEventListener('playing', () => {
         visualizeSound();
