@@ -17,6 +17,31 @@
     body {
       margin: 20px;
     }
+
+    .equalizer-panel {
+      display: flex;
+      position: relative;
+      top: 100px;
+      left: 250px;
+    }
+
+    .equalizer-panel li {
+      list-style-type: none;
+      width: 80px;
+    }
+
+    .equalizer-panel .range-vertical {
+      width: 150px;
+      height: 20px;
+      margin: 0;
+      transform: rotate(-90deg);
+    }
+
+    .equalizer-panel .label {
+      position: relative;
+      top: 80px;
+      left: 40px;
+    }
   </style>
 </head>
 <body>
@@ -37,6 +62,33 @@
         <input type="range" id="oscillator-frequency" min="20" max="11000" step="100" value="500">
         <span id="freq-value"></span>
       </p>
+    </p>
+    <p>
+      <datalist id="tickmarks">
+        <option value="1" label="-1">
+        <option value="0.1">
+        <option value="0.2">
+        <option value="0.3">
+        <option value="0.4">
+        <option value="0.5">
+        <option value="0.6">
+        <option value="0.7">
+        <option value="0.8">
+        <option value="0.9">
+        <option value="0" label="0">
+        <option value="-0.1">
+        <option value="-0.2">
+        <option value="-0.3">
+        <option value="-0.4">
+        <option value="-0.5">
+        <option value="-0.6">
+        <option value="-0.7">
+        <option value="-0.8">
+        <option value="-0.9">
+        <option value="-1" label="-1">
+      </datalist>
+      <b>Equalizer</b>
+      <ul class="equalizer-panel" id="equalizer-panel"></ul>
     </p>
   </div>
   <script>
@@ -75,7 +127,7 @@
 
       // Let's initialise the Howler player
       const audio = document.createElement('audio');
-      audio.src = 'audio/33\ Something\ Good.m4a';
+      audio.src = 'audio/42\ The\ Sound.m4a';
 
       audio.addEventListener('playing', () => {
         visualizeSound();
@@ -117,12 +169,6 @@
 
       const oscillator = context.createOscillator();
       oscillator.frequency.value = 500;
-
-      // Make connections to process sound data
-      source.connect(master);
-      // oscillator.connect(master);
-      master.connect(analyser);
-      analyser.connect(context.destination);
 
       // oscillator.start(0);
       ctx.font = "10px Arial";
@@ -195,7 +241,7 @@
           const value = event.target.value;
 
           oscillator.frequency.value = value;
-          feqValue.textContent = value
+          feqValue.textContent = value;
         }, false);
 
       const onMasterFaderChange = (event) => {
@@ -204,6 +250,127 @@
 
       masterFader.addEventListener('input', onMasterFaderChange, false);
       masterFader.addEventListener('change', onMasterFaderChange, false);
+
+      // Define here the configuration for the filter to use for each band
+      const filtersConfig = {
+        '80hz': {
+          type: 'lowshelf',
+          frequency: 80.0,
+          gain: 0.0
+        },
+        '300hz': {
+          type: 'lowshelf',
+          frequency: 300.0,
+          gain: 0.0
+        },
+        '1000hz': {
+          type: 'peaking',
+          frequency: 1000.0,
+          Q: 0.5,
+          gain: 0.0
+        },
+        '2200hz': {
+          type: 'peaking',
+          frequency: 2200.0,
+          Q: 0.5,
+          gain: 0.0
+        },
+        '3500hz': {
+          type: 'peaking',
+          frequency: 3500.0,
+          Q: 0.5,
+          gain: 0.0
+        },
+        '5000hz': {
+          type: 'peaking',
+          frequency: 5000.0,
+          Q: 0.5,
+          gain: 0.0
+        },
+        '7000hz': {
+          type: 'highshelf',
+          frequency: 7000.0,
+          gain: 0.0
+        }
+      };
+      // Define here the bands in order from left to right
+      const filters = {};
+
+      const createFilter = (band) => {
+        const filter = context.createBiquadFilter();
+        const config = filtersConfig[band];
+
+        filter.type = config.type;
+        filter.frequency.value = config.frequency;
+        if (config.Q) filter.Q.value = config.Q;
+        filter.gain.value = config.gain;
+
+        filters[band] = filter;
+      };
+
+      const makeSlider = (band) => {
+        return `
+          <li>
+            <input type="range"
+              id="${band}"
+              min="-1"
+              max="1"
+              step="0.1"
+              value="0"
+              list="tickmarks"
+              class="range-vertical">
+            <div class="label">${band}</div>
+          </li>
+        `;
+      };
+
+      const equalizerPanel = document.getElementById('equalizer-panel');
+      const filterBands = Object.keys(filtersConfig);
+
+      let equalizerSlides = '';
+      filterBands.forEach((band) => {
+        createFilter(band);
+
+        equalizerSlides += makeSlider(band);
+      });
+      // Appends all the slides to the equalizer panel
+      equalizerPanel.innerHTML = equalizerSlides;
+
+      // Attache events to listen to changes on each slides
+      filterBands.forEach((band) => {
+        document.getElementById(band).addEventListener('input', (event) => {
+          filters[band].gain.value = event.target.value * 10;
+        });
+      });
+
+      function connectFilters(filters, slide = 0) {
+        if (slide === filters.length) {
+          // Last filter connects to master
+          filters[slide - 1].connect(master);
+
+          return; // all connections completed
+        }
+
+        const filter = filters[slide];
+        if (slide === 0) {
+          // First filter connect to source
+          source.connect(filter);
+        }
+        else {
+          // Intermediary filters connect to previous filter output
+          filters[slide - 1].connect(filter);
+        }
+
+        return connectFilters(filters, slide + 1);
+      };
+
+      // Now let's connect all the filters
+      connectFilters(Object.values(filters));
+
+      // oscillator.connect(master);
+      master.connect(analyser);
+      //master.connect(context.destination);
+      analyser.connect(context.destination);
     })();
   </script>
 </body>
