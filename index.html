@@ -127,7 +127,8 @@
 
       // Let's initialise the Howler player
       const audio = document.createElement('audio');
-      audio.src = 'audio/42\ The\ Sound.m4a';
+      // audio.src = 'audio/42\ The\ Sound.m4a';
+      audio.src = 'audio/33 Something Good.m4a';
 
       audio.addEventListener('playing', () => {
         visualizeSound();
@@ -258,27 +259,40 @@
           frequency: 80.0,
           gain: 0.0
         },
-        '300hz': {
-          type: 'lowshelf',
-          frequency: 300.0,
+        '220hz': {
+          type: 'peaking',
+          Q: 1,
+          frequency: 220.0,
           gain: 0.0
         },
-        '1000hz': {
+        '800hz': {
           type: 'peaking',
-          frequency: 1000.0,
+          Q: 1,
+          frequency: 800.0,
+          gain: 0.0
+        },
+        '1200hz': {
+          type: 'peaking',
+          frequency: 1200.0,
           Q: 0.5,
           gain: 0.0
         },
         '2200hz': {
           type: 'peaking',
           frequency: 2200.0,
-          Q: 0.5,
+          Q: 1,
           gain: 0.0
         },
         '3500hz': {
           type: 'peaking',
           frequency: 3500.0,
-          Q: 0.5,
+          Q: 1,
+          gain: 0.0
+        },
+        '4200hz': {
+          type: 'peaking',
+          frequency: 4200.0,
+          Q: 1,
           gain: 0.0
         },
         '5000hz': {
