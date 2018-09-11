@@ -2,7 +2,6 @@
 <html>
 <head>
   <title></title>
-  <script src="node_modules/howler/dist/howler.min.js"></script>
   <style>
     body { margin: 0; padding: 0; }
     #display {
@@ -35,7 +34,7 @@
         <button id="btn-oscillator-on">ON</button>
         <button id="btn-oscillator-off">OFF</button>
         Freq:
-        <input type="range" id="oscillator-frequency" min="20" max="15000" step="1000" value="500">
+        <input type="range" id="oscillator-frequency" min="20" max="11000" step="100" value="500">
         <span id="freq-value"></span>
       </p>
     </p>
@@ -43,15 +42,15 @@
   <script>
     (function audioVisualizer(){
       const config = {
-        dotSize: 5,
-        dotGap: 7,
+        dotSize: 10,
+        dotGap: 30,
         scaleFactor: 25,
         startPoint: 0,
-        topOffset: 11,
-        fftSize: 512,
+        topOffset: 10,
+        fftSize: 256,
         smoothingTimeConstant: 0.7,
-        minDecibels: -80,
-        maxDecibels: -40
+        minDecibels: -70,
+        maxDecibels: -30
       };
 
       const display = document.getElementById('display');
@@ -66,7 +65,7 @@
           config.dotSize,
           config.dotSize
         );
-      }
+      };
 
       // Takes a reference to the animation frame
       let animation;
@@ -76,7 +75,7 @@
 
       // Let's initialise the Howler player
       const audio = document.createElement('audio');
-      audio.src = 'audio/1-03 I\'m Yours (Radio Edit).m4a';
+      audio.src = 'audio/33\ Something\ Good.m4a';
 
       audio.addEventListener('playing', () => {
         visualizeSound();
@@ -94,6 +93,7 @@
 
       const context = new AudioContext();
       const source = context.createMediaElementSource(audio);
+      const sampleRate = context.sampleRate;
       const analyser = context.createAnalyser();
       // Declares frequency analysis parameters
       analyser.fftSize = config.fftSize;
@@ -107,8 +107,8 @@
       display.width = (
         bufferLength * config.dotSize +
         bufferLength * (config.dotGap / 2)
-      );
-      display.height = (
+      ) / 2;
+      display.height = 100 + (
         (255 / config.scaleFactor) * (config.dotSize + config.dotGap / 2)
       );
 
@@ -125,14 +125,19 @@
       analyser.connect(context.destination);
 
       // oscillator.start(0);
+      ctx.font = "10px Arial";
+
+      // Reads the bar Y values
+      const plotLength = bufferLength / 2;
+      const freqScale = sampleRate / 4;
+      const freqRange = freqScale / plotLength;
 
       function visualizeSound() {
         clearDisplay();
 
         analyser.getByteFrequencyData(dataArray);
 
-        // Reads the bar Y values
-        for (let x = config.startPoint; x < bufferLength; x++) {
+        for (let x = config.startPoint; x < plotLength; x++) {
           for (
             let y = 0;
             y <= Math.round(dataArray[x] / config.scaleFactor);
@@ -142,6 +147,13 @@
               x - config.startPoint,
               config.topOffset - y,
               config.dotGap
+            );
+
+            const freq = Math.floor(freqRange * (x + 1));
+            ctx.fillText(
+              freq >= 1000 ? (freq / 1000).toFixed(2) + 'k' : freq,
+              x * config.dotGap - config.startPoint,
+              display.height - 20
             );
           }
         }
