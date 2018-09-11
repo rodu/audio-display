@@ -131,16 +131,14 @@
 
       // Let's initialise the Howler player
       const audio = document.createElement('audio');
-
+      let fileURL;
       document.getElementById('file-loader')
         .addEventListener('change', (event) => {
-          const fileReader = new FileReader();
+          if (fileURL) {
+            Object.revokeObjectURL(fileURL);
+          }
 
-          fileReader.onload = (event) => {
-            audio.src = event.target.result;
-          };
-
-          fileReader.readAsDataURL(event.target.files[0]);
+          audio.src = fileURL = URL.createObjectURL(event.target.files[0]);
         });
 
       // audio.src = 'audio/42\ The\ Sound.m4a';
