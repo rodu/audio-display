@@ -172,7 +172,7 @@
       const bufferLength = analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
 
-      display.width = (
+      display.width = 200 + (
         bufferLength * config.dotSize +
         bufferLength * (config.dotGap / 2)
       ) / 2;
@@ -213,7 +213,7 @@
 
             const freq = Math.floor(freqRange * (x + 1));
             ctx.fillText(
-              freq >= 1000 ? (freq / 1000).toFixed(2) + 'k' : freq,
+              freq >= 1000 ? (freq / 1000).toFixed(1) + 'k' : freq,
               x * config.dotGap - config.startPoint,
               display.height - 20
             );
@@ -356,7 +356,7 @@
               id="${band}"
               min="-1"
               max="1"
-              step="0.1"
+              step="0.05"
               value="0"
               list="tickmarks"
               class="range-vertical">
