@@ -135,10 +135,11 @@
       document.getElementById('file-loader')
         .addEventListener('change', (event) => {
           if (fileURL) {
-            Object.revokeObjectURL(fileURL);
+            URL.revokeObjectURL(fileURL);
           }
 
           audio.src = fileURL = URL.createObjectURL(event.target.files[0]);
+          audio.load();
         });
 
       // audio.src = 'audio/42\ The\ Sound.m4a';
@@ -268,26 +269,38 @@
 
       // Define here the configuration for the filter to use for each band
       const filtersConfig = {
-        '80hz': {
+        '60hz': {
           type: 'lowshelf',
-          frequency: 80.0,
+          frequency: 60.0,
           gain: 0.0
         },
-        '220hz': {
+        /*'120hz': {
+          type: 'peaking',
+          Q: 1,
+          frequency: 120.0,
+          gain: 0.0
+        },*/
+        '250hz': {
           type: 'peaking',
           Q: 1,
           frequency: 220.0,
           gain: 0.0
         },
-        '800hz': {
+        '400hz': {
+          type: 'peaking',
+          Q: 1,
+          frequency: 220.0,
+          gain: 0.0
+        },
+        /*'800hz': {
           type: 'peaking',
           Q: 1,
           frequency: 800.0,
           gain: 0.0
-        },
-        '1200hz': {
+        },*/
+        '1100hz': {
           type: 'peaking',
-          frequency: 1200.0,
+          frequency: 1100.0,
           Q: 0.5,
           gain: 0.0
         },
@@ -297,15 +310,15 @@
           Q: 1,
           gain: 0.0
         },
-        '3500hz': {
+        '3200hz': {
           type: 'peaking',
-          frequency: 3500.0,
+          frequency: 3200.0,
           Q: 1,
           gain: 0.0
         },
-        '4200hz': {
+        '4300hz': {
           type: 'peaking',
-          frequency: 4200.0,
+          frequency: 4300.0,
           Q: 1,
           gain: 0.0
         },
