@@ -63,7 +63,7 @@
         <button id="btn-oscillator-on">ON</button>
         <button id="btn-oscillator-off">OFF</button>
         Freq:
-        <input type="range" id="oscillator-frequency" min="20" max="11000" step="100" value="500">
+        <input type="number" id="oscillator-frequency" min="20" max="11000" step="10" value="100">
         <span id="freq-value"></span>
       </p>
     </p>
@@ -186,7 +186,7 @@
       const oscillator = context.createOscillator();
       oscillator.frequency.value = 500;
 
-      // oscillator.start(0);
+      oscillator.start(0);
       ctx.font = "10px Arial";
 
       // Reads the bar Y values
@@ -408,7 +408,7 @@
       // Now let's connect all the filters
       connectFilters(Object.values(filters));
 
-      // oscillator.connect(master);
+      oscillator.connect(master);
       master.connect(analyser);
       //master.connect(context.destination);
       analyser.connect(context.destination);
