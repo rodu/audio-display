@@ -54,7 +54,7 @@
     <p>
       <button id="btn-play">Play</button>
       <button id="btn-pause">Pause</button>
-      <input type="range" id="master-fader" min="0" max="5" step="0.1" value="1.0">
+      <input type="range" id="master-fader" min="0.0" max="1.0" step="0.1" value="1.0">
       <span id="master-value"></span>
     </p>
     <p>
@@ -140,6 +140,8 @@
 
           audio.src = fileURL = URL.createObjectURL(event.target.files[0]);
           audio.load();
+
+          initialiseAudioContext()
         });
 
       // audio.src = 'audio/42\ The\ Sound.m4a';
@@ -159,259 +161,262 @@
         clearDisplay();
       });
 
-      const context = new AudioContext();
-      const source = context.createMediaElementSource(audio);
-      const sampleRate = context.sampleRate;
-      const analyser = context.createAnalyser();
-      // Declares frequency analysis parameters
-      analyser.fftSize = config.fftSize;
-      analyser.smoothingTimeConstant = config.smoothingTimeConstant;
-      analyser.minDecibels = config.minDecibels;
-      analyser.maxDecibels = config.maxDecibels;
+      function initialiseAudioContext() {
 
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
+        const context = new AudioContext();
+        const source = context.createMediaElementSource(audio);
+        const sampleRate = context.sampleRate;
+        const analyser = context.createAnalyser();
+        // Declares frequency analysis parameters
+        analyser.fftSize = config.fftSize;
+        analyser.smoothingTimeConstant = config.smoothingTimeConstant;
+        analyser.minDecibels = config.minDecibels;
+        analyser.maxDecibels = config.maxDecibels;
 
-      display.width = 200 + (
-        bufferLength * config.dotSize +
-        bufferLength * (config.dotGap / 2)
-      ) / 2;
-      display.height = 100 + (
-        (255 / config.scaleFactor) * (config.dotSize + config.dotGap / 2)
-      );
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
 
-      const master = context.createGain();
-      master.gain.value = 1.0;
+        display.width = 200 + (
+          bufferLength * config.dotSize +
+          bufferLength * (config.dotGap / 2)
+        ) / 2;
+        display.height = 100 + (
+          (255 / config.scaleFactor) * (config.dotSize + config.dotGap / 2)
+        );
 
-      const oscillator = context.createOscillator();
-      oscillator.frequency.value = 500;
+        const master = context.createGain();
+        master.gain.value = 1.0;
 
-      oscillator.start(0);
-      ctx.font = "10px Arial";
+        const oscillator = context.createOscillator();
+        oscillator.frequency.value = 500;
 
-      // Reads the bar Y values
-      const plotLength = bufferLength / 2;
-      const freqScale = sampleRate / 4;
-      const freqRange = freqScale / plotLength;
+        oscillator.start(0);
+        ctx.font = "10px sans";
 
-      function visualizeSound() {
-        clearDisplay();
+        // Reads the bar Y values
+        const plotLength = bufferLength / 2;
+        const freqScale = sampleRate / 4;
+        const freqRange = freqScale / plotLength;
+        function visualizeSound() {
+          clearDisplay();
 
-        analyser.getByteFrequencyData(dataArray);
+          analyser.getByteFrequencyData(dataArray);
 
-        for (let x = config.startPoint; x < plotLength; x++) {
-          for (
-            let y = 0;
-            y <= Math.round(dataArray[x] / config.scaleFactor);
-            y++
-          ) {
-            renderRect(
-              x - config.startPoint,
-              config.topOffset - y,
-              config.dotGap
-            );
+          for (let x = config.startPoint; x < plotLength; x++) {
+            for (
+              let y = 0;
+              y <= Math.round(dataArray[x] / config.scaleFactor);
+              y++
+            ) {
+              renderRect(
+                x - config.startPoint,
+                config.topOffset - y,
+                config.dotGap
+              );
 
-            const freq = Math.floor(freqRange * (x + 1));
-            ctx.fillText(
-              freq >= 1000 ? (freq / 1000).toFixed(1) + 'k' : freq,
-              x * config.dotGap - config.startPoint,
-              display.height - 20
-            );
+              const freq = Math.floor(freqRange * (x + 1));
+              ctx.fillText(
+                freq >= 1000 ? (freq / 1000).toFixed(1) + 'k' : freq,
+                x * config.dotGap - config.startPoint,
+                display.height - 20
+              );
+            }
           }
+
+          animation = requestAnimationFrame(visualizeSound);
         }
 
-        animation = requestAnimationFrame(visualizeSound);
-      }
+        const masterValue = document.getElementById('master-value');
+        const masterFader = document.getElementById('master-fader');
 
-      const masterValue = document.getElementById('master-value');
-      const masterFader = document.getElementById('master-fader');
+        const updateMasterFader = (value) => {
+          masterFader.value = masterValue.textContent = value;
 
-      const updateMasterFader = (value) => {
-        master.gain.value =
-          masterFader.value =
-          masterValue.textContent = value;
-      };
+          master.gain.setValueAtTime(value, context.currentTime)
+        };
 
-      document.getElementById('btn-oscillator-off').addEventListener('click', () => {
-        updateMasterFader(0);
-        window.cancelAnimationFrame(animation);
-        clearDisplay();
-      }, false);
-
-      document.getElementById('btn-oscillator-on').addEventListener('click', () => {
-        updateMasterFader(1.0);
-        visualizeSound();
-      }, false);
-
-      document.getElementById('btn-play').addEventListener('click', () => {
-        audio.play();
-      }, false);
-
-      document.getElementById('btn-pause').addEventListener('click', () => {
-        audio.pause();
-      }, false);
-
-      const feqValue = document.getElementById('freq-value');
-      document.getElementById('oscillator-frequency')
-        .addEventListener('input', (event) => {
-          const value = event.target.value;
-
-          oscillator.frequency.value = value;
-          feqValue.textContent = value;
+        document.getElementById('btn-oscillator-off').addEventListener('click', () => {
+          updateMasterFader(0);
+          window.cancelAnimationFrame(animation);
+          clearDisplay();
         }, false);
 
-      const onMasterFaderChange = (event) => {
-        updateMasterFader(event.target.value);
-      };
+        document.getElementById('btn-oscillator-on').addEventListener('click', () => {
+          updateMasterFader(1.0);
+          visualizeSound();
+        }, false);
 
-      masterFader.addEventListener('input', onMasterFaderChange, false);
-      masterFader.addEventListener('change', onMasterFaderChange, false);
+        document.getElementById('btn-play').addEventListener('click', () => {
+          audio.play();
+        }, false);
 
-      // Define here the configuration for the filter to use for each band
-      const filtersConfig = {
-        '60hz': {
-          type: 'lowshelf',
-          frequency: 60.0,
-          gain: 0.0
-        },
-        /*'120hz': {
-          type: 'peaking',
-          Q: 1,
-          frequency: 120.0,
-          gain: 0.0
-        },*/
-        '250hz': {
-          type: 'peaking',
-          Q: 1,
-          frequency: 220.0,
-          gain: 0.0
-        },
-        '400hz': {
-          type: 'peaking',
-          Q: 1,
-          frequency: 220.0,
-          gain: 0.0
-        },
-        /*'800hz': {
-          type: 'peaking',
-          Q: 1,
-          frequency: 800.0,
-          gain: 0.0
-        },*/
-        '1100hz': {
-          type: 'peaking',
-          frequency: 1100.0,
-          Q: 0.5,
-          gain: 0.0
-        },
-        '2200hz': {
-          type: 'peaking',
-          frequency: 2200.0,
-          Q: 1,
-          gain: 0.0
-        },
-        '3200hz': {
-          type: 'peaking',
-          frequency: 3200.0,
-          Q: 1,
-          gain: 0.0
-        },
-        '4300hz': {
-          type: 'peaking',
-          frequency: 4300.0,
-          Q: 1,
-          gain: 0.0
-        },
-        '5000hz': {
-          type: 'peaking',
-          frequency: 5000.0,
-          Q: 0.5,
-          gain: 0.0
-        },
-        '7000hz': {
+        document.getElementById('btn-pause').addEventListener('click', () => {
+          audio.pause();
+        }, false);
+
+        const feqValue = document.getElementById('freq-value');
+        document.getElementById('oscillator-frequency')
+          .addEventListener('input', (event) => {
+            const value = event.target.value;
+
+            oscillator.frequency.value = value;
+            feqValue.textContent = value;
+          }, false);
+
+        const onMasterFaderChange = (event) => {
+          updateMasterFader(event.target.value);
+        };
+
+        masterFader.addEventListener('input', onMasterFaderChange, false);
+        masterFader.addEventListener('change', onMasterFaderChange, false);
+
+        // Define here the configuration for the filter to use for each band
+        const filtersConfig = {
+          '60hz': {
+            type: 'lowshelf',
+            frequency: 60.0,
+            gain: 0.0
+          },
+          /*'120hz': {
+            type: 'peaking',
+            Q: 1,
+            frequency: 120.0,
+            gain: 0.0
+          },*/
+          '150hz': {
+            type: 'peaking',
+            Q: 1,
+            frequency: 220.0,
+            gain: 0.0
+          },
+          '400hz': {
+            type: 'peaking',
+            Q: 1,
+            frequency: 220.0,
+            gain: 0.0
+          },
+          /*'800hz': {
+            type: 'peaking',
+            Q: 1,
+            frequency: 800.0,
+            gain: 0.0
+          },*/
+          '1500hz': {
+            type: 'peaking',
+            frequency: 1100.0,
+            Q: 0.5,
+            gain: 0.0
+          },
+          /*'2200hz': {
+            type: 'peaking',
+            frequency: 2200.0,
+            Q: 1,
+            gain: 0.0
+          },*/
+          '3400hz': {
+            type: 'peaking',
+            frequency: 3200.0,
+            Q: 1,
+            gain: 0.0
+          },
+          /*'3500hz': {
+            type: 'peaking',
+            frequency: 4300.0,
+            Q: 1,
+            gain: 0.0
+          },*/
+          '5600hz': {
+            type: 'peaking',
+            frequency: 5000.0,
+            Q: 0.5,
+            gain: 0.0
+          },
+          '9000hz': {
           type: 'highshelf',
           frequency: 7000.0,
           gain: 0.0
-        }
-      };
-      // Define here the bands in order from left to right
-      const filters = {};
+          }
+        };
+        // Define here the bands in order from left to right
+        const filters = {};
 
-      const createFilter = (band) => {
-        const filter = context.createBiquadFilter();
-        const config = filtersConfig[band];
+        const createFilter = (band) => {
+          const filter = context.createBiquadFilter();
+          const config = filtersConfig[band];
 
-        filter.type = config.type;
-        filter.frequency.value = config.frequency;
-        if (config.Q) filter.Q.value = config.Q;
-        filter.gain.value = config.gain;
+          filter.type = config.type;
+          filter.frequency.value = config.frequency;
+          if (config.Q) filter.Q.value = config.Q;
+          filter.gain.value = config.gain;
 
-        filters[band] = filter;
-      };
+          filters[band] = filter;
+        };
 
-      const makeSlider = (band) => {
-        return `
-          <li>
-            <input type="range"
-              id="${band}"
-              min="-1"
-              max="1"
-              step="0.05"
-              value="0"
-              list="tickmarks"
-              class="range-vertical">
-            <div class="label">${band}</div>
-          </li>
-        `;
-      };
+        const makeSlider = (band) => {
+          return `
+            <li>
+              <input type="range"
+                id="${band}"
+                min="-1"
+                max="1"
+                step="0.05"
+                value="0"
+                list="tickmarks"
+                class="range-vertical">
+              <div class="label">${band}</div>
+            </li>
+          `;
+        };
 
-      const equalizerPanel = document.getElementById('equalizer-panel');
-      const filterBands = Object.keys(filtersConfig);
+        const equalizerPanel = document.getElementById('equalizer-panel');
+        const filterBands = Object.keys(filtersConfig);
 
-      let equalizerSlides = '';
-      filterBands.forEach((band) => {
-        createFilter(band);
+        let equalizerSlides = '';
+        filterBands.forEach((band) => {
+          createFilter(band);
 
-        equalizerSlides += makeSlider(band);
-      });
-      // Appends all the slides to the equalizer panel
-      equalizerPanel.innerHTML = equalizerSlides;
-
-      // Attache events to listen to changes on each slides
-      filterBands.forEach((band) => {
-        document.getElementById(band).addEventListener('input', (event) => {
-          filters[band].gain.value = event.target.value * 10;
+          equalizerSlides += makeSlider(band);
         });
-      });
+        // Appends all the slides to the equalizer panel
+        equalizerPanel.innerHTML = equalizerSlides;
 
-      function connectFilters(filters, slide = 0) {
-        if (slide === filters.length) {
-          // Last filter connects to master
-          filters[slide - 1].connect(master);
+        // Attache events to listen to changes on each slides
+        filterBands.forEach((band) => {
+          document.getElementById(band).addEventListener('input', (event) => {
+            filters[band].gain.setValueAtTime(event.target.value * 10, context.currentTime);
+          });
+        });
 
-          return; // all connections completed
-        }
+        function connectFilters(filters, slide = 0) {
+          if (slide === filters.length) {
+            // Last filter connects to master
+            filters[slide - 1].connect(master);
 
-        const filter = filters[slide];
-        if (slide === 0) {
-          // First filter connect to source
-          source.connect(filter);
-        }
-        else {
-          // Intermediary filters connect to previous filter output
-          filters[slide - 1].connect(filter);
-        }
+            return; // all connections completed
+          }
 
-        return connectFilters(filters, slide + 1);
-      };
+          const filter = filters[slide];
+          if (slide === 0) {
+            // First filter connect to source
+            source.connect(filter);
+          }
+          else {
+            // Intermediary filters connect to previous filter output
+            filters[slide - 1].connect(filter);
+          }
 
-      // Now let's connect all the filters
-      connectFilters(Object.values(filters));
+          return connectFilters(filters, slide + 1);
+        };
 
-      oscillator.connect(master);
-      master.connect(analyser);
-      //master.connect(context.destination);
-      analyser.connect(context.destination);
+        // Now let's connect all the filters
+        connectFilters(Object.values(filters));
+
+        // oscillator.connect(master);
+        master.connect(analyser);
+        //master.connect(context.destination);
+        analyser.connect(context.destination);
+      }
+
     })();
   </script>
 </body>
